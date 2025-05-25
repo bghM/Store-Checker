@@ -120,7 +120,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary/20 selection:text-primary font-sans">
       <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border-2 border-primary/10">
-        <CardHeader className="bg-gradient-to-br from-primary/70 via-primary/90 to-accent/50 p-6 md:p-8">
+        <CardHeader className="bg-card-header-custom p-6 md:p-8">
           <div className="flex items-center justify-center mb-3">
              <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
           </div>

@@ -13,6 +13,7 @@ body {
 
     --card: 0 0% 100%; /* White */
     --card-foreground: 237 13.1% 24.1%; /* #333446 */
+    --card-header-custom-bg: 222 67.4% 16.9%; /* #0E2148 */
 
     --popover: 0 0% 100%; /* White */
     --popover-foreground: 237 13.1% 24.1%; /* #333446 */
@@ -61,6 +62,7 @@ body {
 
     --card: 237 13% 28%;       /* Slightly lighter than bg #3F4052 */
     --card-foreground: 180 13.3% 93.1%; /* #EAEFEF */
+    --card-header-custom-bg: 222 67.4% 16.9%; /* #0E2148 */ /* Assuming same for dark or can be adjusted */
 
     --popover: 237 13% 28%;
     --popover-foreground: 180 13.3% 93.1%;
