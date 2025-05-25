@@ -89,7 +89,8 @@ export async function POST(req: NextRequest) {
           /sallaTagManager\.dataLayer\.push\(\s*\{\s*[^}]*?"store_id":\s*"(\d+)"/i,
           // More generic search for store_id in JSON structures within scripts
           /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
-          /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i
+          /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i,
+          /salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*(\d+)[^}]*?\}\s*\}\s*\}\s*\)/i // Added this line
         ];
         
         $('script').each((_i, el) => {
