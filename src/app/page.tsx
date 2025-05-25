@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, SearchCode, ShoppingBag, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { cn } from '@/lib/utils';
 
 interface DetectionResult {
   platform: string;
@@ -117,6 +118,8 @@ export default function HomePage() {
     }
   };
 
+  const hasUrl = url.trim() !== '';
+
   return (
     <main className="min-h-screen bg-background flex flex-col items-center justify-center p-4 selection:bg-primary/20 selection:text-primary font-sans">
       <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border-2 border-primary/10">
@@ -150,7 +153,12 @@ export default function HomePage() {
           <Button
             onClick={handleCheck}
             disabled={loading || !isClient}
-            className="w-full h-12 text-md font-semibold bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:ring-4 focus:ring-primary/50"
+            className={cn(
+              "w-full h-12 text-md font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:ring-4",
+              hasUrl && !loading
+                ? "bg-card-header-custom hover:bg-card-header-custom/80 text-white focus:ring-card-header-custom/50"
+                : "bg-primary hover:bg-primary/80 text-primary-foreground focus:ring-primary/50"
+            )}
             aria-label="Check store platform"
           >
             {loading ? (
