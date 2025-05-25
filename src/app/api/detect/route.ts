@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to fetch URL. Server responded with status: ${res.status} ${res.statusText}` }, { status: res.status });
     }
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    const lowerHtmlContent = html.toLowerCase(); // For case-insensitive general string checks
+    const htmlContent = await res.text(); // Renamed for clarity, used for direct string searches
+    const $ = cheerio.load(htmlContent);
+    const lowerHtmlContent = htmlContent.toLowerCase(); // For case-insensitive general string checks
     
     // Salla Detection
     const isSallaByMeta = $('meta[name="generator"][content="salla"]').length > 0 || $('meta[name="generator"][content="Salla"]').length > 0;
@@ -77,8 +77,16 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+
+      // 3. Direct HTML content match for salla.event.dispatchEvents
+      if (storeId === 'Unknown') {
+        const dispatchEventMatch = htmlContent.match(/salla\.event\.dispatchEvents\(\{"twilight::init":\{"store":\{"id":(\d+)/);
+        if (dispatchEventMatch && dispatchEventMatch[1] && /^\d+$/.test(dispatchEventMatch[1])) {
+          storeId = dispatchEventMatch[1];
+        }
+      }
       
-      // 3. Script Content Regex (global vars, config objects, dataLayer)
+      // 4. Script Content Regex (global vars, config objects, dataLayer)
       if (storeId === 'Unknown') {
         const sallaScriptRegexes = [
           /salla\.config\.store\.id\s*=\s*"?(\d+)"?/i,
@@ -90,6 +98,7 @@ export async function POST(req: NextRequest) {
           // More generic search for store_id in JSON structures within scripts
           /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
           /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i,
+          // Regex for salla.event.dispatchEvents, capturing ID if quoted or not
           /salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i
         ];
         
@@ -110,7 +119,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // 4. Generic data-store-id attribute on any element
+      // 5. Generic data-store-id attribute on any element
       if (storeId === 'Unknown') {
         $('[data-store-id]').each((_i, el) => {
           const id = $(el).attr('data-store-id');
