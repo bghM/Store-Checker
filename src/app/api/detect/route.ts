@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to fetch URL. Server responded with status: ${res.status} ${res.statusText}` }, { status: res.status });
     }
 
-    const htmlContent = await res.text(); 
+    const htmlContent = await res.text();
     const $ = cheerio.load(htmlContent);
-    const lowerHtmlContent = htmlContent.toLowerCase(); 
-    
+    const lowerHtmlContent = htmlContent.toLowerCase();
+
     // Salla Detection
     const isSallaByMeta = $('meta[name="generator"][content="salla"]').length > 0 || $('meta[name="generator"][content="Salla"]').length > 0;
     const isSallaByScript = lowerHtmlContent.includes('window.salla') || lowerHtmlContent.includes('salla.config') || lowerHtmlContent.includes("salla.app");
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     if (isSallaByMeta || isSallaByScript || isSallaByCdn || hasSallaThemeAsset) {
       let storeId = 'Unknown';
-      
+
       // Priority Order for Salla ID:
       // 1. Specific Meta Tags
       const metaStoreIdCandidates = [
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       if (storeId === 'Unknown') {
         const elementAttrCandidates = [
           $('salla-app').attr('store-id'),
-          $('salla-apps').attr('store'), 
+          $('salla-apps').attr('store'),
         ];
         for (const id of elementAttrCandidates) {
           if (id && /^\d+$/.test(id)) {
@@ -77,12 +77,12 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-      
+
       // 3. Direct HTML content match for salla.event.dispatchEvents (specific pattern)
       if (storeId === 'Unknown') {
-        const dispatchEventMatch = htmlContent.match(/salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i);
-        if (dispatchEventMatch && dispatchEventMatch[1] && /^\d+$/.test(dispatchEventMatch[1])) {
-          storeId = dispatchEventMatch[1];
+        const match = htmlContent.match(/salla\.event\.dispatchEvents\(\{"twilight::init":\{"store":\{"id":(\d+)/);
+        if (match && match[1]) {
+          storeId = match[1];
         }
       }
       
@@ -95,10 +95,10 @@ export async function POST(req: NextRequest) {
           /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like
           /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
           /sallaTagManager\.dataLayer\.push\(\s*\{\s*[^}]*?"store_id":\s*"(\d+)"/i,
-          /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
+          /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i,
           /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i,
         ];
-        
+
         $('script').each((_i, el) => {
           const scriptContent = $(el).html();
           if (scriptContent) {
@@ -107,12 +107,12 @@ export async function POST(req: NextRequest) {
               for (const match of matches) {
                 if (match && match[1] && /^\d+$/.test(match[1])) {
                   storeId = match[1];
-                  return false; 
+                  return false;
                 }
               }
             }
           }
-          if (storeId !== 'Unknown') return false; 
+          if (storeId !== 'Unknown') return false;
         });
       }
 
@@ -122,11 +122,11 @@ export async function POST(req: NextRequest) {
           const id = $(el).attr('data-store-id');
           if (id && /^\d+$/.test(id)) {
             storeId = id;
-            return false; 
+            return false;
           }
         });
       }
-      
+
       return NextResponse.json({ platform: 'Salla', storeId: storeId === 'Unknown' ? null : storeId });
     }
 
@@ -135,10 +135,10 @@ export async function POST(req: NextRequest) {
     const isZidByScript = lowerHtmlContent.includes('window.zid') || lowerHtmlContent.includes('window.__store__') || lowerHtmlContent.includes("zid.behaviors");
     const isZidByCdn = lowerHtmlContent.includes('cdn.zid.store') || lowerHtmlContent.includes('assets.zid.store');
     const hasZidElement = $('#zid-app').length > 0 || $('zid-app-entry').length > 0;
-    
+
     if (isZidByMeta || isZidByScript || isZidByCdn || hasZidElement) {
       let storeId = 'Unknown';
-      
+
       // Priority Order for Zid ID:
       // 1. window.__STORE__ from script tags (most reliable if present)
       $('script').each((_i, el) => {
@@ -151,13 +151,13 @@ export async function POST(req: NextRequest) {
               const storeJson = JSON.parse(cleanedJsonString);
               if (storeJson && storeJson.id && /^\d+$/.test(String(storeJson.id))) {
                 storeId = String(storeJson.id);
-                return false; 
+                return false;
               }
                if (storeJson && storeJson.store && storeJson.store.id && /^\d+$/.test(String(storeJson.store.id))) {
                 storeId = String(storeJson.store.id);
                 return false;
               }
-            } catch (e) { 
+            } catch (e) {
               const idMatch = match[1].match(/"id"\s*:\s*"?(\d+)"?/i);
               if (idMatch && idMatch[1] && /^\d+$/.test(idMatch[1])) {
                 storeId = idMatch[1];
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
           /zidApi\.store\.id\s*=\s*"?(\d+)"?/i,
           /zid\.store\.id\s*=\s*['"]?(\d+)['"]?/i,
           /window\.zid\.store\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i,
-          /"sku"\s*:\s*"z\.(\d+)"/i, 
+          /"sku"\s*:\s*"z\.(\d+)"/i,
           /"store_id"\s*:\s*"?(\d+)"?/gi,
           /"merchant_id"\s*:\s*"?(\d+)"?/gi,
           /storeId["']?\s*:\s*["']?(\d+)["']?/gi,
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
             for (const regex of zidScriptRegexes) {
                const matches = (regex.global) ? [...scriptContent.matchAll(regex)] : [scriptContent.match(regex)];
                for (const match of matches) {
-                if (match && match[1] && /^\d+$/.test(match[1])) {
+                if (match && match[1] && (/^\d+$/.test(match[1]) || (regex.source.includes("sku") && /^\d+$/.test(match[1])) ) ) { // For SKU, it's already z.NUMBER so match[1] is NUMBER
                   storeId = match[1];
                   return false; // Exit .each loop for zidScriptRegexes
                 }
@@ -239,18 +239,18 @@ export async function POST(req: NextRequest) {
           const id = $(el).attr('data-store-id') || $(el).attr('data-zid-store-id');
           if (id && (/^\d+$/.test(id) || /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id))) { // Allow numeric or UUID
             storeId = id;
-            return false; 
+            return false;
           }
         });
       }
-      
+
       return NextResponse.json({ platform: 'Zid', storeId: storeId === 'Unknown' ? null : storeId });
     }
 
     return NextResponse.json({ platform: 'Unknown', storeId: null });
   } catch (err: any) {
     if (err.name === 'AbortError' || (err.cause && err.cause.code === 'UND_ERR_CONNECT_TIMEOUT')) {
-      return NextResponse.json({ error: 'Request timed out while trying to fetch the store URL. The store might be slow or temporarily unavailable.' }, { status: 504 }); 
+      return NextResponse.json({ error: 'Request timed out while trying to fetch the store URL. The store might be slow or temporarily unavailable.' }, { status: 504 });
     }
     if (err.cause && (err.cause.code === 'ENOTFOUND' || err.cause.code === 'EAI_AGAIN')) {
       return NextResponse.json({ error: 'Could not resolve the store URL. Please check the domain name.' }, { status: 400 });
