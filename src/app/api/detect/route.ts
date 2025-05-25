@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 
@@ -49,28 +50,77 @@ export async function POST(req: NextRequest) {
     if (isSallaByMeta || isSallaByScript || isSallaByCdn || hasSallaThemeAsset) {
       let storeId = 'Unknown';
       
-      // Try meta tags first
-      const metaStoreId = $('meta[property="store:id"]').attr('content') || 
-                          $('meta[name="store-id"]').attr('content') ||
-                          $('salla-app').attr('store-id');
-      if (metaStoreId && /^\d+$/.test(metaStoreId)) {
-        storeId = metaStoreId;
-      } else {
-         // Try script content regex (more robust)
-        const scriptIdMatches = [
-          ...html.matchAll(/"store_id"\s*:\s*"?(\d+)"?/gi),
-          ...html.matchAll(/salla\.config\.store\.id\s*=\s*"?(\d+)"?/gi),
-          ...html.matchAll(/storeId["']?\s*:\s*["']?(\d+)["']?/gi), // More generic
-          ...html.matchAll(/content=["']store_id=(\d+)["']/gi) // For some meta or link tags
-        ];
-        for (const match of scriptIdMatches) {
-            if (match[1] && /^\d+$/.test(match[1])) {
-                storeId = match[1];
-                break;
-            }
+      // Priority Order for Salla ID:
+      // 1. Specific Meta Tags
+      const metaStoreIdCandidates = [
+        $('meta[property="store:id"]').attr('content'),
+        $('meta[name="store-id"]').attr('content'),
+        $('meta[name="salla:store:id"]').attr('content'),
+      ];
+      for (const id of metaStoreIdCandidates) {
+        if (id && /^\d+$/.test(id)) {
+          storeId = id;
+          break;
         }
       }
-      return NextResponse.json({ platform: 'Salla', storeId });
+
+      // 2. Specific HTML Element Attributes
+      if (storeId === 'Unknown') {
+        const elementAttrCandidates = [
+          $('salla-app').attr('store-id'),
+          $('salla-apps').attr('store'), // Common attribute for store ID
+        ];
+        for (const id of elementAttrCandidates) {
+          if (id && /^\d+$/.test(id)) {
+            storeId = id;
+            break;
+          }
+        }
+      }
+      
+      // 3. Script Content Regex (global vars, config objects, dataLayer)
+      if (storeId === 'Unknown') {
+        const sallaScriptRegexes = [
+          /salla\.config\.store\.id\s*=\s*"?(\d+)"?/i,
+          /Salla\.Store\.id\s*=\s*"?(\d+)"?/i,
+          /appManager\.getState\(\)\.store\.id\s*:\s*"?(\d+)"?/i,
+          /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like
+          /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
+          /sallaTagManager\.dataLayer\.push\(\s*\{\s*[^}]*?"store_id":\s*"(\d+)"/i,
+          // More generic search for store_id in JSON structures within scripts
+          /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
+          /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i
+        ];
+        
+        $('script').each((_i, el) => {
+          const scriptContent = $(el).html();
+          if (scriptContent) {
+            for (const regex of sallaScriptRegexes) {
+              const matches = (regex.global) ? [...scriptContent.matchAll(regex)] : [scriptContent.match(regex)];
+              for (const match of matches) {
+                if (match && match[1] && /^\d+$/.test(match[1])) {
+                  storeId = match[1];
+                  return false; // Break from script iteration
+                }
+              }
+            }
+          }
+          if (storeId !== 'Unknown') return false; // Break from .each if found
+        });
+      }
+
+      // 4. Generic data-store-id attribute on any element
+      if (storeId === 'Unknown') {
+        $('[data-store-id]').each((_i, el) => {
+          const id = $(el).attr('data-store-id');
+          if (id && /^\d+$/.test(id)) {
+            storeId = id;
+            return false; // Break .each
+          }
+        });
+      }
+      
+      return NextResponse.json({ platform: 'Salla', storeId: storeId === 'Unknown' ? null : storeId });
     }
 
     // Zid Detection
@@ -82,22 +132,25 @@ export async function POST(req: NextRequest) {
     if (isZidByMeta || isZidByScript || isZidByCdn || hasZidElement) {
       let storeId = 'Unknown';
       
-      // Check window.__STORE__ from script tags
+      // Priority Order for Zid ID:
+      // 1. window.__STORE__ from script tags (most reliable if present)
       $('script').each((_i, el) => {
         const scriptContent = $(el).html();
         if (scriptContent && scriptContent.toLowerCase().includes('window.__store__')) {
           const match = scriptContent.match(/window\.__STORE__\s*=\s*({.+?});/i);
           if (match && match[1]) {
             try {
-              // Attempt to parse JSON, removing trailing commas if any
-              const cleanedJsonString = match[1].replace(/,\s*([}\]])/g, '$1');
+              const cleanedJsonString = match[1].replace(/,\s*([}\]])/g, '$1').replace(/;\s*$/, '');
               const storeJson = JSON.parse(cleanedJsonString);
               if (storeJson && storeJson.id && /^\d+$/.test(String(storeJson.id))) {
                 storeId = String(storeJson.id);
-                return false; // Found ID, break loop
+                return false; 
+              }
+               if (storeJson && storeJson.store && storeJson.store.id && /^\d+$/.test(String(storeJson.store.id))) {
+                storeId = String(storeJson.store.id);
+                return false;
               }
             } catch (e) { 
-              // Try regex on the string if JSON parse fails
               const idMatch = match[1].match(/"id"\s*:\s*"?(\d+)"?/i);
               if (idMatch && idMatch[1] && /^\d+$/.test(idMatch[1])) {
                 storeId = idMatch[1];
@@ -108,20 +161,72 @@ export async function POST(req: NextRequest) {
         }
       });
 
+      // 2. Script Content Regex (global vars, config objects)
       if (storeId === 'Unknown') {
-        const scriptIdMatches = [
-            ...html.matchAll(/"store_id"\s*:\s*"?(\d+)"?/gi),
-            ...html.matchAll(/"merchant_id"\s*:\s*"?(\d+)"?/gi), // Zid sometimes uses merchant_id
-            ...html.matchAll(/storeId["']?\s*:\s*["']?(\d+)["']?/gi)
+        const zidScriptRegexes = [
+          /ZID_STORE_ID\s*=\s*['"]?(\d+)['"]?/i,
+          /zidApi\.store\.id\s*=\s*"?(\d+)"?/i,
+          /zid\.store\.id\s*=\s*['"]?(\d+)['"]?/i,
+          /window\.zid\.store\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i,
+          /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like
+          /"merchant_id"\s*:\s*"?(\d+)"?/gi, // Zid sometimes uses merchant_id
+          /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
         ];
-        for (const match of scriptIdMatches) {
-            if (match[1] && /^\d+$/.test(match[1])) {
-                storeId = match[1];
-                break;
+
+        $('script').each((_i, el) => {
+          const scriptContent = $(el).html();
+          if (scriptContent) {
+            for (const regex of zidScriptRegexes) {
+               const matches = (regex.global) ? [...scriptContent.matchAll(regex)] : [scriptContent.match(regex)];
+               for (const match of matches) {
+                if (match && match[1] && /^\d+$/.test(match[1])) {
+                  storeId = match[1];
+                  return false; // Break from script iteration
+                }
+              }
             }
+          }
+          if (storeId !== 'Unknown') return false; // Break from .each if found
+        });
+      }
+
+      // 3. Specific Meta Tags
+      if (storeId === 'Unknown') {
+        const metaStoreIdCandidates = [
+          $('meta[name="store_id"]').attr('content'),
+          $('meta[name="merchant_id"]').attr('content'),
+        ];
+        for (const id of metaStoreIdCandidates) {
+          if (id && /^\d+$/.test(id)) {
+            storeId = id;
+            break;
+          }
         }
       }
-      return NextResponse.json({ platform: 'Zid', storeId });
+      if (storeId === 'Unknown') {
+        const zidConfigMeta = $('meta[name="zid-config"]').attr('content');
+        if (zidConfigMeta) {
+            try {
+                const configJson = JSON.parse(zidConfigMeta);
+                if (configJson && configJson.store_id && /^\d+$/.test(String(configJson.store_id))) {
+                    storeId = String(configJson.store_id);
+                }
+            } catch (e) { /* ignore parse error */ }
+        }
+      }
+
+      // 4. Generic data-store-id or data-zid-store-id attribute
+      if (storeId === 'Unknown') {
+        $('[data-store-id], [data-zid-store-id]').each((_i, el) => {
+          const id = $(el).attr('data-store-id') || $(el).attr('data-zid-store-id');
+          if (id && /^\d+$/.test(id)) {
+            storeId = id;
+            return false; // Break .each
+          }
+        });
+      }
+      
+      return NextResponse.json({ platform: 'Zid', storeId: storeId === 'Unknown' ? null : storeId });
     }
 
     return NextResponse.json({ platform: 'Unknown', storeId: null });
