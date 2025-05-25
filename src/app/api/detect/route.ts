@@ -37,9 +37,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to fetch URL. Server responded with status: ${res.status} ${res.statusText}` }, { status: res.status });
     }
 
-    const htmlContent = await res.text(); // Renamed for clarity, used for direct string searches
+    const htmlContent = await res.text(); 
     const $ = cheerio.load(htmlContent);
-    const lowerHtmlContent = htmlContent.toLowerCase(); // For case-insensitive general string checks
+    const lowerHtmlContent = htmlContent.toLowerCase(); 
     
     // Salla Detection
     const isSallaByMeta = $('meta[name="generator"][content="salla"]').length > 0 || $('meta[name="generator"][content="Salla"]').length > 0;
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       if (storeId === 'Unknown') {
         const elementAttrCandidates = [
           $('salla-app').attr('store-id'),
-          $('salla-apps').attr('store'), // Common attribute for store ID
+          $('salla-apps').attr('store'), 
         ];
         for (const id of elementAttrCandidates) {
           if (id && /^\d+$/.test(id)) {
@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-
-      // 3. Direct HTML content match for salla.event.dispatchEvents
+      
+      // 3. Direct HTML content match for salla.event.dispatchEvents (specific pattern)
       if (storeId === 'Unknown') {
-        const dispatchEventMatch = htmlContent.match(/salla\.event\.dispatchEvents\(\{"twilight::init":\{"store":\{"id":(\d+)/);
+        const dispatchEventMatch = htmlContent.match(/salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i);
         if (dispatchEventMatch && dispatchEventMatch[1] && /^\d+$/.test(dispatchEventMatch[1])) {
           storeId = dispatchEventMatch[1];
         }
@@ -95,11 +95,10 @@ export async function POST(req: NextRequest) {
           /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like
           /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
           /sallaTagManager\.dataLayer\.push\(\s*\{\s*[^}]*?"store_id":\s*"(\d+)"/i,
-          // More generic search for store_id in JSON structures within scripts
           /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
           /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i,
-          // Regex for salla.event.dispatchEvents, capturing ID if quoted or not
-          /salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i
+          // Regex for salla.event.dispatchEvents (already covered by #3 more specifically, but kept for broader script content matching)
+          // /salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i
         ];
         
         $('script').each((_i, el) => {
@@ -110,12 +109,12 @@ export async function POST(req: NextRequest) {
               for (const match of matches) {
                 if (match && match[1] && /^\d+$/.test(match[1])) {
                   storeId = match[1];
-                  return false; // Break from script iteration
+                  return false; 
                 }
               }
             }
           }
-          if (storeId !== 'Unknown') return false; // Break from .each if found
+          if (storeId !== 'Unknown') return false; 
         });
       }
 
@@ -125,7 +124,7 @@ export async function POST(req: NextRequest) {
           const id = $(el).attr('data-store-id');
           if (id && /^\d+$/.test(id)) {
             storeId = id;
-            return false; // Break .each
+            return false; 
           }
         });
       }
@@ -171,14 +170,15 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // 2. Script Content Regex (global vars, config objects)
+      // 2. Script Content Regex (global vars, config objects, SKU pattern)
       if (storeId === 'Unknown') {
         const zidScriptRegexes = [
           /ZID_STORE_ID\s*=\s*['"]?(\d+)['"]?/i,
           /zidApi\.store\.id\s*=\s*"?(\d+)"?/i,
           /zid\.store\.id\s*=\s*['"]?(\d+)['"]?/i,
           /window\.zid\.store\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i,
-          /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like
+          /"sku"\s*:\s*"z\.(\d+)"/i, // New: Check for SKU pattern like "sku":"z.311283"
+          /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like for store_id (numeric or string-quoted numeric)
           /"merchant_id"\s*:\s*"?(\d+)"?/gi, // Zid sometimes uses merchant_id
           /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
         ];
@@ -191,12 +191,12 @@ export async function POST(req: NextRequest) {
                for (const match of matches) {
                 if (match && match[1] && /^\d+$/.test(match[1])) {
                   storeId = match[1];
-                  return false; // Break from script iteration
+                  return false; 
                 }
               }
             }
           }
-          if (storeId !== 'Unknown') return false; // Break from .each if found
+          if (storeId !== 'Unknown') return false; 
         });
       }
 
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
           const id = $(el).attr('data-store-id') || $(el).attr('data-zid-store-id');
           if (id && /^\d+$/.test(id)) {
             storeId = id;
-            return false; // Break .each
+            return false; 
           }
         });
       }
@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ platform: 'Unknown', storeId: null });
   } catch (err: any) {
     if (err.name === 'AbortError' || (err.cause && err.cause.code === 'UND_ERR_CONNECT_TIMEOUT')) {
-      return NextResponse.json({ error: 'Request timed out while trying to fetch the store URL. The store might be slow or temporarily unavailable.' }, { status: 504 }); // Gateway Timeout
+      return NextResponse.json({ error: 'Request timed out while trying to fetch the store URL. The store might be slow or temporarily unavailable.' }, { status: 504 }); 
     }
     if (err.cause && (err.cause.code === 'ENOTFOUND' || err.cause.code === 'EAI_AGAIN')) {
       return NextResponse.json({ error: 'Could not resolve the store URL. Please check the domain name.' }, { status: 400 });
