@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -124,7 +125,7 @@ export default function HomePage() {
              <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
           </div>
           <CardTitle className="text-3xl md:text-4xl font-extrabold text-center text-primary-foreground tracking-tight drop-shadow-sm">
-            Store Sleuth
+            Store Checker
           </CardTitle>
           <CardDescription className="text-center text-primary-foreground/80 pt-1 text-sm md:text-base">
             Uncover the technology behind e-commerce stores.
