@@ -97,8 +97,6 @@ export async function POST(req: NextRequest) {
           /sallaTagManager\.dataLayer\.push\(\s*\{\s*[^}]*?"store_id":\s*"(\d+)"/i,
           /(?:salla\.config\.store|Salla\.storeData)\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i, 
           /window\.__INITIAL_STATE__\s*=\s*\{[^{}]*?store\s*:\s*\{[^{}]*?id\s*:\s*(\d+)/i,
-          // Regex for salla.event.dispatchEvents (already covered by #3 more specifically, but kept for broader script content matching)
-          // /salla\.event\.dispatchEvents\(\s*\{[^}]*?"twilight::init"\s*:\s*\{[^}]*?"store"\s*:\s*\{[^}]*?"id"\s*:\s*"?(\d+)"?[^}]*?\}\s*\}\s*\}\s*\)/i
         ];
         
         $('script').each((_i, el) => {
@@ -170,33 +168,43 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // 2. Script Content Regex (global vars, config objects, SKU pattern)
+      // 2. Script Content Regex (global vars, config objects, SKU pattern, UUID)
       if (storeId === 'Unknown') {
-        const zidScriptRegexes = [
+        const storeUuidRegex = /store_uuid\s*=\s*["']([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})["']/i;
+        const zidScriptRegexes = [ // These are primarily for numeric IDs
           /ZID_STORE_ID\s*=\s*['"]?(\d+)['"]?/i,
           /zidApi\.store\.id\s*=\s*"?(\d+)"?/i,
           /zid\.store\.id\s*=\s*['"]?(\d+)['"]?/i,
           /window\.zid\.store\s*=\s*\{[^{}]*?"id"\s*:\s*"?(\d+)"?/i,
-          /"sku"\s*:\s*"z\.(\d+)"/i, // New: Check for SKU pattern like "sku":"z.311283"
-          /"store_id"\s*:\s*"?(\d+)"?/gi, // General JSON-like for store_id (numeric or string-quoted numeric)
-          /"merchant_id"\s*:\s*"?(\d+)"?/gi, // Zid sometimes uses merchant_id
-          /storeId["']?\s*:\s*["']?(\d+)["']?/gi, // General variable assignment
+          /"sku"\s*:\s*"z\.(\d+)"/i, 
+          /"store_id"\s*:\s*"?(\d+)"?/gi,
+          /"merchant_id"\s*:\s*"?(\d+)"?/gi,
+          /storeId["']?\s*:\s*["']?(\d+)["']?/gi,
         ];
 
         $('script').each((_i, el) => {
           const scriptContent = $(el).html();
           if (scriptContent) {
+            // First, check for store_uuid
+            const uuidMatch = scriptContent.match(storeUuidRegex);
+            if (uuidMatch && uuidMatch[1]) {
+              storeId = uuidMatch[1];
+              return false; // Exit .each loop for scripts, storeId found
+            }
+
+            // If store_uuid not found, try other regexes for numeric IDs
             for (const regex of zidScriptRegexes) {
                const matches = (regex.global) ? [...scriptContent.matchAll(regex)] : [scriptContent.match(regex)];
                for (const match of matches) {
                 if (match && match[1] && /^\d+$/.test(match[1])) {
                   storeId = match[1];
-                  return false; 
+                  return false; // Exit .each loop for zidScriptRegexes
                 }
               }
+              if (storeId !== 'Unknown') break; // Exit from zidScriptRegexes loop if ID found by one of them
             }
           }
-          if (storeId !== 'Unknown') return false; 
+          if (storeId !== 'Unknown') return false; // Exit .each loop for scripts if ID found
         });
       }
 
@@ -207,7 +215,7 @@ export async function POST(req: NextRequest) {
           $('meta[name="merchant_id"]').attr('content'),
         ];
         for (const id of metaStoreIdCandidates) {
-          if (id && /^\d+$/.test(id)) {
+          if (id && /^\d+$/.test(id)) { // UUIDs won't pass this, only numeric IDs
             storeId = id;
             break;
           }
@@ -229,7 +237,7 @@ export async function POST(req: NextRequest) {
       if (storeId === 'Unknown') {
         $('[data-store-id], [data-zid-store-id]').each((_i, el) => {
           const id = $(el).attr('data-store-id') || $(el).attr('data-zid-store-id');
-          if (id && /^\d+$/.test(id)) {
+          if (id && (/^\d+$/.test(id) || /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id))) { // Allow numeric or UUID
             storeId = id;
             return false; 
           }
