@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, SearchCode, SearchCheck, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface DetectionResult {
   platform: string;
@@ -98,11 +99,42 @@ export default function HomePage() {
           <SearchCheck className="h-5 w-5 text-primary" />
           <AlertTitle className="font-semibold text-lg">Detection Successful!</AlertTitle>
           <AlertDescription className="text-foreground/80">
-            This store appears to be built using <strong className="text-primary">{detectionResult.platform}</strong>.
+            This store appears to be built using{' '}
+            <strong className={
+              detectionResult.platform === 'Salla'
+                ? 'text-[rgb(0_73_86/var(--tw-text-opacity,1))]'
+                : detectionResult.platform === 'Zid'
+                  ? 'text-[rgb(60,28,84)]'
+                  : 'text-primary'
+            }>
+              {detectionResult.platform}
+            </strong>.
+            {detectionResult.platform === 'Zid' && (
+              <div className="mt-2">
+                <Image
+                  src="/zid-icon.png"
+                  alt="Zid Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
             {detectionResult.platform !== 'Zid' && detectionResult.storeId && (
               <>
                 <br />
                 Store ID: <strong className="text-primary">{detectionResult.storeId}</strong>
+                {detectionResult.platform === 'Salla' && (
+                  <div className="mt-2">
+                    <Image
+                      src="/salla-icon.png"
+                      alt="Salla Icon"
+                      width={100}
+                      height={100}
+                      className="inline-block"
+                    />
+                  </div>
+                )}
               </>
             )}
           </AlertDescription>
