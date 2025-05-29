@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, SearchCode, ShoppingBag, AlertTriangle } from 'lucide-react';
+import { Loader2, SearchCode, SearchCheck, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
 
@@ -95,7 +95,7 @@ export default function HomePage() {
     if (detectionResult.platform !== 'Unknown') {
       return (
         <Alert variant="default" className="mt-6 bg-accent/20 border-accent shadow-md">
-          <ShoppingBag className="h-5 w-5 text-primary" />
+          <SearchCheck className="h-5 w-5 text-primary" />
           <AlertTitle className="font-semibold text-lg">Detection Successful!</AlertTitle>
           <AlertDescription className="text-foreground/80">
             This store appears to be built using <strong className="text-primary">{detectionResult.platform}</strong>.
@@ -128,7 +128,7 @@ export default function HomePage() {
       <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border-2 border-primary/10">
         <CardHeader className="bg-card-header-custom p-6 md:p-8">
           <div className="flex items-center justify-center mb-3">
-            <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
+            <SearchCheck className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
           </div>
           <CardTitle className="text-3xl md:text-4xl font-extrabold text-center text-primary-foreground tracking-tight drop-shadow-sm">
             Store Checker
