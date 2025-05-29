@@ -139,6 +139,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ platform: 'Zid' });
     }
 
+    // Shopify Detection
+    const isShopifyByMeta = $('meta[name="generator"][content*="shopify"]').length > 0;
+    const isShopifyByScript = lowerHtmlContent.includes('shopify.com') || lowerHtmlContent.includes('shopify.theme');
+    const isShopifyByCdn = lowerHtmlContent.includes('cdn.shopify.com');
+    const hasShopifyAssets = lowerHtmlContent.includes('/shopify/');
+
+    if (isShopifyByMeta || isShopifyByScript || isShopifyByCdn || hasShopifyAssets) {
+      return NextResponse.json({ platform: 'Shopify' });
+    }
+
+    // WooCommerce Detection
+    const isWooByMeta = $('meta[name="generator"][content*="woocommerce"]').length > 0;
+    const isWooByScript = lowerHtmlContent.includes('woocommerce') || lowerHtmlContent.includes('is-woocommerce');
+    const hasWooElements = $('[class*="woocommerce"]').length > 0;
+
+    if (isWooByMeta || isWooByScript || hasWooElements) {
+      return NextResponse.json({ platform: 'Woocommerce' });
+    }
+
+    // Youcan Detection
+    const isYoucanByScript = lowerHtmlContent.includes('youcan') || lowerHtmlContent.includes('youcanshop');
+    const isYoucanByCdn = lowerHtmlContent.includes('cdn.youcan.shop');
+    const hasYoucanElements = $('[data-youcan]').length > 0 || $('[class*="youcan"]').length > 0;
+
+    if (isYoucanByScript || isYoucanByCdn || hasYoucanElements) {
+      return NextResponse.json({ platform: 'Youcan' });
+    }
+
+    // Matajer Detection
+    const isMatajerByDomain = lowerHtmlContent.includes('mapp.sa');
+    const isMatajerByScript = lowerHtmlContent.includes('matajer') || lowerHtmlContent.includes('mapp-store');
+    const hasMatajerElements = $('[class*="matajer"]').length > 0 || $('[class*="mapp-"]').length > 0;
+
+    if (isMatajerByDomain || isMatajerByScript || hasMatajerElements) {
+      return NextResponse.json({ platform: 'Matajer' });
+    }
+
     return NextResponse.json({ platform: 'Unknown', storeId: null });
   } catch (err: any) {
     if (err.name === 'AbortError' || (err.cause && err.cause.code === 'UND_ERR_CONNECT_TIMEOUT')) {

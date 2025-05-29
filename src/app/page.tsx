@@ -105,7 +105,15 @@ export default function HomePage() {
                 ? 'text-[rgb(0_73_86/var(--tw-text-opacity,1))]'
                 : detectionResult.platform === 'Zid'
                   ? 'text-[rgb(60,28,84)]'
-                  : 'text-primary'
+                  : detectionResult.platform === 'Shopify'
+                    ? 'text-[rgb(4,30,24)]'
+                    : detectionResult.platform === 'Woocommerce'
+                      ? 'text-[#5007aa]'
+                      : detectionResult.platform === 'Youcan'
+                        ? 'text-[rgb(184,51,117)]'
+                        : detectionResult.platform === 'Matajer'
+                          ? 'text-[rgb(81,83,166)]'
+                          : 'text-primary'
             }>
               {detectionResult.platform}
             </strong>.
@@ -114,6 +122,50 @@ export default function HomePage() {
                 <Image
                   src="/zid-icon.png"
                   alt="Zid Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Shopify' && (
+              <div className="mt-2">
+                <Image
+                  src="/shopify-icon.png"
+                  alt="Shopify Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Woocommerce' && (
+              <div className="mt-2">
+                <Image
+                  src="/woocommerce-icon.png"
+                  alt="WooCommerce Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Youcan' && (
+              <div className="mt-2">
+                <Image
+                  src="/youcan-icon.png"
+                  alt="Youcan Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Matajer' && (
+              <div className="mt-2">
+                <Image
+                  src="/matajer-icon.png"
+                  alt="Matajer Icon"
                   width={100}
                   height={100}
                   className="inline-block"
@@ -142,10 +194,10 @@ export default function HomePage() {
       );
     } else {
       return (
-        <Alert variant="default" className="mt-6 shadow-md">
-          <SearchCode className="h-5 w-5" />
+        <Alert variant="default" className="mt-6 shadow-md bg-[#DA6C6C]/90 text-white">
+          <SearchCode className="h-5 w-5 text-white" />
           <AlertTitle className="text-lg">Platform Not Recognized</AlertTitle>
-          <AlertDescription className="text-foreground/80">
+          <AlertDescription className="text-white/90">
             We could not definitively identify the platform for this store. It might use a custom solution or a platform not yet supported.
           </AlertDescription>
         </Alert>
