@@ -1,4 +1,4 @@
-# **App Name**: Store Sleuth
+# **App Name**: Store Checker
 
 ## Core Features:
 

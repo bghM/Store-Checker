@@ -1,13 +1,13 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, SearchCode, ShoppingBag, AlertTriangle } from 'lucide-react';
+import { Loader2, SearchCode, SearchCheck, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface DetectionResult {
   platform: string;
@@ -47,7 +47,7 @@ export default function HomePage() {
 
     const trimmedUrl = url.trim();
     if (!isValidUrl(trimmedUrl)) {
-       toast({
+      toast({
         title: "Invalid URL",
         description: "Please enter a valid store URL (e.g., example.com or https://example.com).",
         variant: "destructive",
@@ -96,21 +96,108 @@ export default function HomePage() {
     if (detectionResult.platform !== 'Unknown') {
       return (
         <Alert variant="default" className="mt-6 bg-accent/20 border-accent shadow-md">
-          <ShoppingBag className="h-5 w-5 text-primary" />
+          <SearchCheck className="h-5 w-5 text-primary" />
           <AlertTitle className="font-semibold text-lg">Detection Successful!</AlertTitle>
           <AlertDescription className="text-foreground/80">
-            This store appears to be built using <strong className="text-primary">{detectionResult.platform}</strong>.
-            <br />
-            Store ID: <strong className="text-primary">{detectionResult.storeId || 'Not found'}</strong>.
+            This store appears to be built using{' '}
+            <strong className={
+              detectionResult.platform === 'Salla'
+                ? 'text-[rgb(0_73_86/var(--tw-text-opacity,1))]'
+                : detectionResult.platform === 'Zid'
+                  ? 'text-[rgb(60,28,84)]'
+                  : detectionResult.platform === 'Shopify'
+                    ? 'text-[rgb(4,30,24)]'
+                    : detectionResult.platform === 'Woocommerce'
+                      ? 'text-[#5007aa]'
+                      : detectionResult.platform === 'Youcan'
+                        ? 'text-[rgb(184,51,117)]'
+                        : detectionResult.platform === 'Matajer'
+                          ? 'text-[rgb(81,83,166)]'
+                          : 'text-primary'
+            }>
+              {detectionResult.platform}
+            </strong>.
+            {detectionResult.platform === 'Zid' && (
+              <div className="mt-2">
+                <Image
+                  src="/zid-icon.png"
+                  alt="Zid Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Shopify' && (
+              <div className="mt-2">
+                <Image
+                  src="/shopify-icon.png"
+                  alt="Shopify Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Woocommerce' && (
+              <div className="mt-2">
+                <Image
+                  src="/woocommerce-icon.png"
+                  alt="WooCommerce Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Youcan' && (
+              <div className="mt-2">
+                <Image
+                  src="/youcan-icon.png"
+                  alt="Youcan Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform === 'Matajer' && (
+              <div className="mt-2">
+                <Image
+                  src="/matajer-icon.png"
+                  alt="Matajer Icon"
+                  width={100}
+                  height={100}
+                  className="inline-block"
+                />
+              </div>
+            )}
+            {detectionResult.platform !== 'Zid' && detectionResult.storeId && (
+              <>
+                <br />
+                Store ID: <strong className="text-primary">{detectionResult.storeId}</strong>
+                {detectionResult.platform === 'Salla' && (
+                  <div className="mt-2">
+                    <Image
+                      src="/salla-icon.png"
+                      alt="Salla Icon"
+                      width={100}
+                      height={100}
+                      className="inline-block"
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </AlertDescription>
         </Alert>
       );
     } else {
       return (
-        <Alert variant="default" className="mt-6 shadow-md">
-           <SearchCode className="h-5 w-5" />
+        <Alert variant="default" className="mt-6 shadow-md bg-[#DA6C6C]/90 text-white">
+          <SearchCode className="h-5 w-5 text-white" />
           <AlertTitle className="text-lg">Platform Not Recognized</AlertTitle>
-          <AlertDescription className="text-foreground/80">
+          <AlertDescription className="text-white/90">
             We could not definitively identify the platform for this store. It might use a custom solution or a platform not yet supported.
           </AlertDescription>
         </Alert>
@@ -125,13 +212,13 @@ export default function HomePage() {
       <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border-2 border-primary/10">
         <CardHeader className="bg-card-header-custom p-6 md:p-8">
           <div className="flex items-center justify-center mb-3">
-             <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
+            <SearchCheck className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
           </div>
           <CardTitle className="text-3xl md:text-4xl font-extrabold text-center text-primary-foreground tracking-tight drop-shadow-sm">
             Store Checker
           </CardTitle>
           <CardDescription className="text-center text-primary-foreground/80 pt-1 text-sm md:text-base">
-            Uncover the technology behind e-commerce stores.
+            Uncover the platform behind e-commerce stores.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 md:p-8 space-y-6">
@@ -144,12 +231,12 @@ export default function HomePage() {
               placeholder="e.g., mystore.salla.sa"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !loading) handleCheck();}}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !loading) handleCheck(); }}
               disabled={loading}
               aria-label="Enter store URL"
             />
           </div>
-          
+
           <Button
             onClick={handleCheck}
             disabled={loading || !isClient}
@@ -164,7 +251,7 @@ export default function HomePage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Sleuthing...
+                Searching...
               </>
             ) : (
               <>
@@ -173,7 +260,7 @@ export default function HomePage() {
               </>
             )}
           </Button>
-          
+
           {isClient && renderResult()}
 
         </CardContent>
@@ -184,7 +271,7 @@ export default function HomePage() {
         </CardFooter>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()} Store Sleuth. For educational and informational purposes.
+        &copy; {new Date().getFullYear()} Store Checker. For informational purposes.
       </footer>
     </main>
   );
