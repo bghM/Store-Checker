@@ -251,7 +251,7 @@ export default function HomePage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Sleuthing...
+                Searching...
               </>
             ) : (
               <>
