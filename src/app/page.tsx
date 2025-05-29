@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -47,7 +46,7 @@ export default function HomePage() {
 
     const trimmedUrl = url.trim();
     if (!isValidUrl(trimmedUrl)) {
-       toast({
+      toast({
         title: "Invalid URL",
         description: "Please enter a valid store URL (e.g., example.com or https://example.com).",
         variant: "destructive",
@@ -100,15 +99,19 @@ export default function HomePage() {
           <AlertTitle className="font-semibold text-lg">Detection Successful!</AlertTitle>
           <AlertDescription className="text-foreground/80">
             This store appears to be built using <strong className="text-primary">{detectionResult.platform}</strong>.
-            <br />
-            Store ID: <strong className="text-primary">{detectionResult.storeId || 'Not found'}</strong>.
+            {detectionResult.platform !== 'Zid' && detectionResult.storeId && (
+              <>
+                <br />
+                Store ID: <strong className="text-primary">{detectionResult.storeId}</strong>
+              </>
+            )}
           </AlertDescription>
         </Alert>
       );
     } else {
       return (
         <Alert variant="default" className="mt-6 shadow-md">
-           <SearchCode className="h-5 w-5" />
+          <SearchCode className="h-5 w-5" />
           <AlertTitle className="text-lg">Platform Not Recognized</AlertTitle>
           <AlertDescription className="text-foreground/80">
             We could not definitively identify the platform for this store. It might use a custom solution or a platform not yet supported.
@@ -125,13 +128,13 @@ export default function HomePage() {
       <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden border-2 border-primary/10">
         <CardHeader className="bg-card-header-custom p-6 md:p-8">
           <div className="flex items-center justify-center mb-3">
-             <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
+            <ShoppingBag className="h-12 w-12 md:h-16 md:w-16 text-primary-foreground drop-shadow-lg" />
           </div>
           <CardTitle className="text-3xl md:text-4xl font-extrabold text-center text-primary-foreground tracking-tight drop-shadow-sm">
             Store Checker
           </CardTitle>
           <CardDescription className="text-center text-primary-foreground/80 pt-1 text-sm md:text-base">
-            Uncover the technology behind e-commerce stores.
+            Uncover the platform behind e-commerce stores.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 md:p-8 space-y-6">
@@ -144,12 +147,12 @@ export default function HomePage() {
               placeholder="e.g., mystore.salla.sa"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !loading) handleCheck();}}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !loading) handleCheck(); }}
               disabled={loading}
               aria-label="Enter store URL"
             />
           </div>
-          
+
           <Button
             onClick={handleCheck}
             disabled={loading || !isClient}
@@ -173,7 +176,7 @@ export default function HomePage() {
               </>
             )}
           </Button>
-          
+
           {isClient && renderResult()}
 
         </CardContent>
@@ -184,7 +187,7 @@ export default function HomePage() {
         </CardFooter>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()} Store Sleuth. For educational and informational purposes.
+        &copy; {new Date().getFullYear()} Store Checker. For informational purposes.
       </footer>
     </main>
   );
